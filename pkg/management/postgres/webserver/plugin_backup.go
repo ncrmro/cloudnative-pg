@@ -66,7 +66,12 @@ func NewPluginBackupCommand(
 
 // Start starts a backup using the Plugin
 func (b *PluginBackupCommand) Start(ctx context.Context) {
-	go b.invokeStart(ctx)
+	// Use a context that is not tied to the HTTP request lifecycle, so that
+	// the backup goroutine is not cancelled when the exec session times out or
+	// is interrupted (e.g. by API server timeout or load balancer idle timeout).
+	// context.WithoutCancel preserves context values (such as the logger) while
+	// removing the cancellation signal from the parent context.
+	go b.invokeStart(context.WithoutCancel(ctx))
 }
 
 func (b *PluginBackupCommand) invokeStart(ctx context.Context) {
